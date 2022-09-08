@@ -1,0 +1,200 @@
+---
+title: "stat348_a2"
+author: "Jinhao Zhong"
+date: "2021/3/17"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Name: Zhong, Jinhao
+\
+Student Id: 11204178
+\
+Course: STAT 348
+\
+Session: 2020-2021 regular session, Term 2
+
+
+# (1)
+
+## a
+```{r warning=FALSE, message=FALSE}
+library(sampling)
+library(samplingbook)
+library(survey)
+baseball<-read.csv("C:/Users/Admin/Desktop/stat348/a2/baseball(1).csv",
+                   header=T)
+set.seed(66)
+
+Nh = table(baseball$team)
+Nh = as.vector(Nh)
+
+
+nh.prop = stratasamp(n=150, Nh=Nh, type="prop")
+nh.prop
+nh.prop = nh.prop[2,]
+
+s.prop = sampling:::strata(data  = baseball, stratanames = "team",
+  size=nh.prop, method="srswor")
+sam.prop<-getdata(baseball,s.prop)
+```
+
+## b
+```{r warning=FALSE, message=FALSE}
+Nh.prop<-rep(Nh,nh.prop)
+des.prop<- svydesign(id=~1,strata=~team,data=sam.prop,fpc=~Nh.prop)
+
+svymean(~log(salary),des.prop)
+confint(svymean(~log(salary),des.prop))
+```
+
+## c
+```{r warning=FALSE, message=FALSE}
+Nh.prop<-rep(Nh,nh.prop)
+des.prop<- svydesign(id=~1,strata=~team,data=sam.prop,fpc=~Nh.prop)
+
+svymean(~pitcher,des.prop)
+confint(svymean(~pitcher,des.prop))
+
+```
+## d
+The logsal in assignment 1 and here are close to each other, both mean has less than 0.1 difference, and the SE is even less. The same as the difference of pitchers in these two assignment, it is also less than 0.1.
+
+
+## e
+
+```{r warning=FALSE, message=FALSE}
+
+
+Sh = tapply(X = log(sam.prop$salary), INDEX = sam.prop$team, FUN = var)
+Sh = as.vector(Sh)
+Sh
+```
+It is not worthwhile.
+
+
+
+
+# (2)
+
+## set up function
+```{r warning=FALSE, message=FALSE}
+ratio.estimation = function(y,x,tx,N=NULL,level=0.95){
+n<-length(y)
+xbar<-mean(x)
+B<-sum(y)/sum(x)
+t<-B*tx
+var.resid<-var(y-B*x)
+fpc<-ifelse(is.null(N),1,(1-n/N))
+var.B<-fpc*var.resid/(n*xbar^2)
+var.t<-tx^2*var.B
+ci.B<-B+c(-1,1)*qt(1-(1-level)/2,n-1)*sqrt(var.B)
+ci.t<-t+c(-1,1)*qt(1-(1-level)/2,n-1)*sqrt(var.t)
+options(scipen = 999)
+results<-round(cbind(est=c(B,t),se=sqrt(c(var.B,var.t)),
+  lower.ci=c(ci.B[1],ci.t[1]),upper.ci=c(ci.B[2],ci.t[2])),digits=4)
+rownames(results)<-c("Ratio","Total")
+if(!is.null(N)){
+ybar<-t/N
+var.ybar<-var.B*(tx/N)^2
+ci.mean<-ybar+c(-1,1)*qt(1-(1-level)/2,n-1)*sqrt(var.ybar)
+results<-rbind(results,c(ybar,sqrt(var.ybar),ci.mean))
+rownames(results)[3]<-"Mean"
+}
+return(list(correlation=cor(y,x),"ratio estimation"=results))
+}
+```
+
+## a
+
+```{r warning=FALSE, message=FALSE}
+countries= read.csv("C:/Users/Admin/Desktop/stat348/a2/counties.csv", header = T)
+hist(countries$farmpop)
+```
+we can observe that the distribution of data is skewed to left.
+
+## b
+```{r warning=FALSE, message=FALSE}
+n<- 100
+N<-3141
+
+y.bar= mean(countries$farmpop)
+#total farm population estimate
+T.hat= N*y.bar
+T.hat
+
+s_2= var(countries$farmpop)
+SE = N*sqrt((1-n/N)*s_2/n)
+SE
+```
+
+## c
+
+```{r warning=FALSE, message=FALSE}
+plot(countries$landarea, countries$farmpop)
+
+b.hat=mean(countries$farmpop)/mean(countries$landarea)
+r=(countries$farmpop-b.hat*countries$landarea)/sqrt(countries$landarea)
+plot(countries$landarea,r,
+     xlab="land area",ylab="Weighted residuals")
+
+
+cor(countries$landarea,countries$farmpop)
+```
+
+By observing the graph above, we can see that the data is not linear relationship, so it should be none of them.
+
+
+## d
+
+```{r warning=FALSE, message=FALSE}
+tx=3536278
+ratio.estimation(countries$farmpop,countries$landarea,
+                 tx,N=N)
+
+```
+
+## e
+
+By observing the data above, we can see that SRS has the closer answer, also the SE is smaller.
+
+# 3
+
+## b
+```{r warning=FALSE, message=FALSE}
+x3=countries$totpop
+y3=countries$veterans
+
+y3.bar=mean(y3)
+T3.hat=N*y3.bar
+T3.hat
+
+s2=var(y3)
+
+SE = N*sqrt((1-n/N)*s2/n)
+SE
+```
+## c
+
+```{r warning=FALSE, message=FALSE}
+plot(x3,y3)
+
+B3.hat=mean(y3)/mean(x3)
+r=(y3-B3.hat*x3)/sqrt(x3)
+plot(x3,r,xlab="population",ylab="Weighted residuals")
+
+cor(x3,y3)
+```
+
+By observing the graph, we can see that data are linear relationship, and they appears go through zero, thus, ratio estimation is more appropriate.
+
+## d
+
+```{r warning=FALSE, message=FALSE}
+tx=255077536
+ratio.estimation(y3,x3,tx,N=N)
+```
+

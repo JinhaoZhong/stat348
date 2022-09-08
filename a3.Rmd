@@ -1,0 +1,95 @@
+---
+title: "a3q4"
+author: "Jinhao Zhong"
+date: "2021/4/8"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Name: Zhong, Jinhao
+\
+Student Id: 11204178
+\
+Course: STAT 348
+\
+Session: 2020-2021 regular session, Term 2
+
+```{r warning=FALSE, message=FALSE}
+onestage.equal.prob = function(formula,data,N,M0=NULL,ICC=FALSE){
+var.name = all.vars(formula)[1]
+psu.name = all.vars(formula)[2]
+var.int = data[,var.name]
+psu = as.character(data[,psu.name])
+n = length(unique(psu))
+Mi = as.vector(table(psu))
+ti =  tapply(var.int,psu,sum)
+MS.hat<-summary(aov(var.int~as.factor(psu)))[[1]][,3]
+if(!is.null(M0)){
+df.total = M0-1
+df.bet = N-1
+df.within = df.total-df.bet
+SS.hat = MS.hat*c(df.bet,df.within)
+S2.hat = sum(SS.hat)/df.total
+Ra2.hat = 1-MS.hat[2]/S2.hat
+}
+t.unb = N*sum(var.int)/n
+st2 = sum((ti-t.unb/N)^2)/(n-1)
+se.t.unb = sqrt(N^2*(1-n/N)*st2/n)
+y.ratio = sum(ti)/sum(Mi)
+se.y.ratio = sqrt(sum((ti-Mi*y.ratio)^2)*(1-n/N)/(n*(n-1)*mean(Mi)^2))
+if(!is.null(M0)){
+y.unb = t.unb/M0
+se.y.unb = se.t.unb/M0
+unb.est = cbind(Estimate = c(t.unb,y.unb),SE = c(se.t.unb,se.y.unb))
+rownames(unb.est)<-c("Total","Mean")
+t.ratio = M0*y.ratio
+se.t.ratio = M0*se.y.ratio
+ratio.est = cbind(Estimate = c(t.ratio,y.ratio),SE = c(se.t.ratio,se.y.ratio))
+rownames(ratio.est)<-c("Total","Mean")
+output = list("Unbiased Estimation" = unb.est, 
+  "Ratio Estimation" = ratio.est, "Adjusted R2" = Ra2.hat)
+} else{
+unb.est = cbind(Estimate = t.unb,SE = se.t.unb)
+rownames(unb.est)<-c("Total")
+ratio.est = cbind(Estimate = y.ratio,SE = se.y.ratio)
+rownames(ratio.est)<-c("Mean")
+output = list("Unbiased Estimation" = unb.est, 
+  "Ratio Estimation" = ratio.est)
+}
+if(ICC){
+M = Mi[1]
+df.total = N*M-1
+df.bet = N-1
+df.within = df.total-df.bet
+SS.hat = MS.hat*c(df.bet,df.within)
+icc = 1-(M/(M-1))*(SS.hat[2]/sum(SS.hat))
+output[["ICC"]] = icc
+}
+return(output)
+}
+```
+
+## a
+```{r warning=FALSE, message=FALSE}
+library(sampling)
+
+baseball = read.csv("C:/Users/Admin/Desktop/stat348/a3/baseball(2).csv",header=T)
+
+set.seed (66)
+sam.unit = sampling:::cluster(baseball,clustername="team",size=6,method="srswor")
+baseball.csam = getdata(baseball,sam.unit)
+# Find the number of ssus of the selected psus
+table(baseball.csam$team)
+```
+
+## b
+```{r warning=FALSE, message=FALSE}
+logsal.data=data.frame(baseball.csam,logsal=log(baseball.csam$salary))
+onestage.equal.prob(logsal ~ team, data = logsal.data, N = 30, M0 = 797)
+```
+
+## c
+This one has the smaller SE than assignment 1, because the cluster sampling cover every level of the salary, but SRS may took many samples on the same level, that will make the SE less convinience. 

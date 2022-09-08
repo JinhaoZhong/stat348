@@ -1,0 +1,123 @@
+---
+title: "Stat348, A1"
+author: "Jinhao Zhong"
+date: "2021/2/18"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Name: Zhong, Jinhao
+Student Id: 11204178
+Course: STAT 348
+Session: 2020-2021 regular session, Term 2
+
+
+
+# (1)
+Target population: All the members who join the "Joint Statistical Meetings"
+
+Sampling frame: The email address of people that join the "Joint Statistical Meetings"
+
+sampling unit: Each person who joined the "Joint Statistical Meetings" and mailed by The American Statistical Association.
+
+observation unit: The survey that finished by each person who join "Joint Statistical Meetings" and emailed.
+
+Reason that maybe inaccuracy: There should not have selection bias since all the observation units are the member of the "Joint Statistical Meetings". The in accuracy may cause by the misunderstanding of the survey. Also, it is possible that the sampling frame is not equal to the target population, which is not all the members are in the survey, thus, it may cause the result inaccuracy. 
+
+
+# (2)
+
+## (2a)
+
+Refereed_Publication: (0,1,2,3,4,5,6,7,8,9,10)\
+Faculty_Members:(28,4,3,4,4,2,1,0,2,1,1)
+
+
+```{r warning=FALSE, message=FALSE}
+Refereed_Publication<-c(0,1,2,3,4,5,6,7,8,9,10)
+Faculty_Members<-c(28,4,3,4,4,2,1,0,2,1,1)
+data_frame<-data.frame(cbind(Refereed_Publication,Faculty_Members))
+barplot(data_frame$Faculty_Members,names.arg = Refereed_Publication,xlab = "Refereed Publication",ylab = "Faculty Members")
+```
+
+The graph shows that the data is positive skewness.
+
+## (2b)
+The image at the back.
+
+## (2c)
+
+$\bar{y}$ will not be approximately normally distributed, because the sample is only 50 people, it is not large enough for the normal distribution, and the data are positive skewness, 28 of 50 people are at x=0.
+
+## (2d)
+
+95% CI=1.96
+proportion of faculty with no publications is 28 out of 50, we have $\frac{28}{50}$ $\cdot$ 100 = 0.56, then
+p=0.56.
+
+SE($\hat p$) =$\sqrt{ \frac {\hat p (1-\hat p)}{n-1}(1-\frac{n}{N})}$
+= $\sqrt{ \frac {0.56\cdot0.44}{49} (1-\frac {50}{807})}$
+$\approx$ 0.6868$\ldots$ \
+The C.I.= $\hat p$ ± 1.96 $\cdot SE(\hat p)$ = 0.56 ± 0.1346 = (0.4254, 0.6946)\
+Thus, CI is (0.4254, 0.6946)
+
+# (3)
+
+Image on the back
+
+# (4)
+
+## (4.1)
+
+There are 797 baseball players in the file, use sample(1:N,n) in r language to randomly select 150 players in the file.
+```{r warning=FALSE, message=FALSE}
+set.seed(66)
+library(sampling)
+library(samplingbook)
+library(survey)
+
+baseball<-read.csv("C:/Users/Admin/Desktop/stat348/a1/baseball.csv", header=T)
+N <-nrow(baseball)
+n=150
+
+sam.unit= sample(1:N,n)
+sam.unit
+baseballsam = baseball[sam.unit,]
+
+design.srs = svydesign(ids = ~1, data = baseballsam, fpc = ~rep(N,n))
+
+```
+
+## (4b)
+
+```{r warning=FALSE, message=FALSE}
+salary=baseballsam$salary
+hist(salary)
+hist(log(salary))
+
+```
+
+By observation, the histogram of salary is right skewed. the histogram of logsal is less right skewed and closer to normal distribution.
+
+## (4c)
+```{r warning=FALSE, message=FALSE}
+set.seed(66)
+est.mean = svymean(x = sample(1:N,n), design = design.srs)
+est.mean
+
+salary = baseballsam$salary
+skew = sum((salary - est.mean[1])^3)/(n * sd(salary)^3)
+nmin = 28 + 25 * skew^2
+nmin
+
+confint(est.mean, level = 0.95)
+est.total = svytotal(x = ~salary, design = design.srs)
+est.total
+confint(est.total, level = 0.95)
+est.p = svymean(x = sample(1:N,n), design = design.srs)
+est.p
+confint(est.p, level = 0.95)
+```
